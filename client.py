@@ -1,15 +1,16 @@
 import math
-from bots.bot_random import Bot
+from bot import Bot
 
 
 def main():
-    print('Ultimate Tic-Tac-Toe')
+    MAX_TIME = 2  # thinking time for the bot in seconds
 
     # make the game and the bot
     game = Game()
-    bot = Bot()
+    bot = Bot(MAX_TIME)
 
     # render starting board
+    print('Ultimate Tic-Tac-Toe')
     game.render_board()
 
     # main loop
@@ -135,7 +136,7 @@ class Game:
 
     
     def get_bot_move(self, bot):
-        self.board, self.next_subgame = bot.get_move(self.board, self.next_subgame)
+        self.board, self.big_board, self.next_subgame = bot.get_move(self.board, self.big_board, self.next_subgame)
 
         self.check_subgames()
         self.check_win()
@@ -195,31 +196,52 @@ class Game:
             row_sum = 0
             for n in range(3):
                 row_sum += self.big_board[m][n]
-            
+
+                if row_sum == 3:
+                    self.game_active = False
+                    print('player win')
+                elif row_sum == -3:
+                    self.game_active = False
+                    print('bot win')
+
         # check the cols
         for n in range(3):
             col_sum = 0
             for m in range(3):
                 col_sum += self.big_board[m][n]
-        
+                
+                if col_sum == 3:
+                    self.game_active = False
+                    print('player win')
+                elif col_sum == -3:
+                    self.game_active = False
+                    print('bot win')
+
         # check the diagonals
         # backwards diag
-        diag_sum1 = 0
+        diag_sum = 0
         for p in range(3):
-            diag_sum1 += self.big_board[p][p]
+            diag_sum += self.big_board[p][p]
+
+            if diag_sum == 3:
+                self.game_active = False
+                print('player win')
+            elif diag_sum == -3:
+                self.game_active = False
+                print('bot win')
 
         # forwards diag
-        diag_sum2 = 0
+        diag_sum = 0
         for p in range(3):
-            diag_sum2 += self.big_board[2 - p][p]
+            diag_sum += self.big_board[2 - p][p]
 
-        if row_sum == 3 or col_sum == 3 or diag_sum1 == 3 or diag_sum2 == 3:
-            self.game_active = False
-            print('player win')
-        if row_sum == -3 or col_sum == -3 or diag_sum1 == -3 or diag_sum2 == -3:
-            self.game_active = False
-            print('bot win')
-            
+            if diag_sum == 3:
+                self.game_active = False
+                print('player win')
+            elif diag_sum == -3:
+                self.game_active = False
+                print('bot win')
+
 
 if __name__ == "__main__":
     main()
