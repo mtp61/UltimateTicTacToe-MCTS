@@ -12,6 +12,15 @@ class Bot():
         self.MAX_TIME = MAX_TIME
 
     def get_move(self, board, big_board, next_subgame):
+        """
+        # simple random move bot
+        root.update_children()
+        num_moves = len(root.children)
+        print(f"{num_moves} possible moves")
+        child = root.children[random.randrange(num_moves)]
+        return child.board, child.big_board, child.next_subgame
+        """
+
         # get the current time
         start_time = time.time()
 
@@ -20,21 +29,30 @@ class Bot():
 
 
 
-
-        # simple rando bot
-        root.update_children()
-        num_moves = len(root.children)
-        print(f"{num_moves} possible moves")
-        child = root.children[random.randrange(num_moves)]
-        return child.board, child.big_board, child.next_subgame
+        
         
 
 
 
         # main loop
         #while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
-        #    pass
+            # selection
+
+
+            # expansion
+
+
+            # simulation
+
+
+            # backpropogation
+            
+            pass
             # todo
+
+
+
+        # find best move from the game tree and return it
 
         return board, big_board, next_subgame
 
