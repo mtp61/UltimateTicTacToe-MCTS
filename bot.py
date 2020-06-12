@@ -1,6 +1,7 @@
 import time
 import random
 import copy
+import math
 
 
 class Bot():
@@ -25,22 +26,36 @@ class Bot():
         start_time = time.time()
 
         # make the root node
-        root = Node(board, big_board, next_subgame, -1, 0)
-
-
-
-        
-        
-
-
+        root = Node(board, big_board, next_subgame, -1, 0)  # create the root
 
         # main loop
-        #while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
+        while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
             # selection
+            current_node = root
+            node_chain = [current_node]
+            while current_node.num_visits > 0:  # keep searching until we have a node with no visits
+                max_score = -1
+                for child in current_node.children:
+                    if child.num_visits == 0:
+                        child_score = 999
+                    else:
+                        parent_node = node_chain[-1]
+                        parent_visits = parent_node.num_visits
 
+                        win_ratio = child.num_wins / child.num_visits
+                        explore_component = math.sqrt(2) * math.sqrt(math.log(parent_visits) / child.num_visits)
+                        child_score = win_ratio + explore_component
 
+                    if child_score > max_score:
+                        max_score = child_score
+                        max_node = child
+
+                # new current node 
+                current_node = max_node
+                node_chain.append(current_node)
+                
             # expansion
-
+            current_node.update_children()
 
             # simulation
 
@@ -57,15 +72,40 @@ class Bot():
         return board, big_board, next_subgame
 
 
+    def simulate_game(self, start_node):
+        current_node = start_node
+        # go to random moves until there is a win
+        while current_node.is_win == 0:
+            # generate children
+            current_node.update_children()
+
+            # pick a random child and reset current node
+            num_children = len(current_node.children)
+            current_node = current_node.children[random.randrange(num_children)]
+
+        return current_node.is_win  # return winner, 1 or -1
+
+
 class Node():
     def __init__(self, board, big_board, next_subgame, player_to_act, is_win):
+        # game state info
         self.board = board
         self.big_board = big_board
         self.next_subgame = next_subgame
         self.player_to_act = player_to_act
         self.is_win = is_win
 
+        # for MCTS
         self.children = []  # list of child nodes
+        self.num_visits = 0
+        self.num_wins = 0
+
+        # testing, needed for drawing the tree
+        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+        tmp_str = ""
+        for _ in range(4):
+            tmp_str += letters[random.randrange(len(letters))]
+        self.id = tmp_str
 
 
     def get_children(self, board, big_board, next_subgame, player_to_act):
@@ -157,7 +197,7 @@ class Node():
                 child['big_board'][i][j] = -1
                 need_update = True
 
-            child['is_win'] = False
+            child['is_win'] = 0
             if need_update:  # update big_board if needed
                 # check if big_board is a win
                 row_indices, col_indices = [0, 1, 2], [0, 1, 2]
@@ -229,7 +269,3 @@ class Node():
         for child in self.get_children(self.board, self.big_board, self.next_subgame, self.player_to_act):
             self.children.append(Node(child['board'], child['big_board'], child['next_subgame'], child['player_to_act'], child['is_win']))
 
-    def play_random_game(self):
-        # todo
-
-        return 1  # return the winner
