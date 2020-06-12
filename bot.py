@@ -29,7 +29,8 @@ class Bot():
         root = Node(board, big_board, next_subgame, -1, 0)  # create the root
 
         # main loop
-        while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
+        #while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
+        for _ in range(1):
             # selection
             current_node = root
             node_chain = [current_node]
@@ -53,23 +54,43 @@ class Bot():
                 # new current node 
                 current_node = max_node
                 node_chain.append(current_node)
-                
+            
+            
+
+
+
+            # testing
+            self.draw_tree(root)
+            print(f"selected node {current_node.id}")
+            
+                       
+            
+            
             # expansion
             current_node.update_children()
-
+            
             # simulation
-
+            simulation_winner = self.simulate_game(current_node)
 
             # backpropogation
-            
-            pass
-            # todo
-
-
+            for node in node_chain:  # update wins and visits for nodes in the chain
+                node.num_visits += 1
+                if simulation_winner == node.player_to_act:
+                    node.num_wins += 1
 
         # find best move from the game tree and return it
+        best_child_score = -1
+        for child in root.children:
+            if child.num_visits == 0:  # this should not happen if the bot is given sufficient time
+                child_score = 0
+            else:
+                child_score = child.num_wins / child.num_visits
 
-        return board, big_board, next_subgame
+            if child_score > best_child_score:
+                best_child_score = child_score
+                best_child_node = child
+
+        return best_child_node.board, best_child_node.big_board, best_child_node.next_subgame
 
 
     def simulate_game(self, start_node):
@@ -81,9 +102,67 @@ class Bot():
 
             # pick a random child and reset current node
             num_children = len(current_node.children)
+            self.render_board(current_node.board, current_node.big_board)
             current_node = current_node.children[random.randrange(num_children)]
 
         return current_node.is_win  # return winner, 1 or -1
+
+
+    def draw_tree(self, root, max_depth=999):
+        # draw the tree in dfs
+        node_stack = [(root, 0)]  # format for entries is (node, depth)
+        while len(node_stack) > 0:  # run until stack is empty
+            # get top node
+            (top_node, depth) = node_stack.pop()
+
+            # draw node if less than max_depth
+            if depth < max_depth:
+                if depth == 0:
+                    print(top_node.id)
+                else:
+                    print("    " * (depth - 1) + "----" + f"{top_node.id}: {top_node.num_wins} / {top_node.num_visits}")
+
+            # add children to stack
+            for child in top_node.children:  
+                node_stack.append((child, depth + 1))
+        print()  # add a newline
+
+    
+    def render_board(self, board, big_board):  # for testing only
+        ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+        COLUMN_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+        
+        print()
+
+        for i in range(9):
+            print(f"{ROW_LABELS[8 - i]} ", end="")  # row label
+            for j in range(9):
+                # check big board then full board
+                if big_board[math.floor(i / 3)][math.floor(j / 3)] == 1:
+                    print('X', end="")
+                elif big_board[math.floor(i / 3)][math.floor(j / 3)] == -1:
+                    print('O', end="")
+                elif board[i][j] == 0:
+                    print(' ', end="")
+                elif board[i][j] == 1:
+                    print('X', end="")
+                elif board[i][j] == -1:
+                    print('O', end="")
+                
+                if (j + 1) % 3 != 0:
+                    print(' ', end="")
+                elif j != 8:
+                    print('|', end="")
+            print()
+
+            if (i + 1) % 3 == 0 and i != 8:
+                print("  -----┼-----┼-----")
+            
+        print()
+        print("  ", end="")
+        for j in range(9):
+            print(f"{COLUMN_LABELS[j]} ", end="")            
+        print()
 
 
 class Node():
@@ -139,6 +218,9 @@ class Node():
         for child in children:
             # add the big_board
             child['big_board'] = copy.deepcopy(big_board)
+
+            # player to act
+            child['player_to_act'] = player_to_act * -1
 
             # check the subgame to see if it is completed
             need_update = False
@@ -253,10 +335,6 @@ class Node():
                 elif diag_sum == -3:
                     child['is_win'] = -1
                     break
-                
-
-            # player to act
-            child['player_to_act'] = player_to_act * -1
 
             # make sure next_subgame is correct
             if child['big_board'][child['next_subgame'][0]][child['next_subgame'][1]] != 0:
@@ -268,4 +346,3 @@ class Node():
     def update_children(self):
         for child in self.get_children(self.board, self.big_board, self.next_subgame, self.player_to_act):
             self.children.append(Node(child['board'], child['big_board'], child['next_subgame'], child['player_to_act'], child['is_win']))
-

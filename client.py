@@ -119,7 +119,7 @@ class Game:
             if self.board[move_parsed[0]][move_parsed[1]] != 0:
                 continue
 
-            # move is valid
+            # if we get to here in the loop then move is valid
             need_move = False
 
         # execute the move
