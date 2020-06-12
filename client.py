@@ -130,7 +130,18 @@ class Game:
 
         # update next subgame
         if self.big_board[move_parsed[0] % 3][move_parsed[1] % 3] == 0:
-            self.next_subgame = (move_parsed[0] % 3, move_parsed[1] % 3)
+            i = move_parsed[0] % 3
+            j = move_parsed[1] % 3
+            finished_cells = 0
+            for m in range(3):
+                for n in range(3):
+                    if self.board[3 * i + m][3 * j + n] != 0:
+                        finished_cells += 1
+
+            if finished_cells == 9:  # subgame is full
+                self.next_subgame = (-1, -1)
+            else:
+                self.next_subgame = (move_parsed[0] % 3, move_parsed[1] % 3)
         else:
             self.next_subgame = (-1, -1)
 
@@ -241,6 +252,26 @@ class Game:
             elif diag_sum == -3:
                 self.game_active = False
                 print('bot win')
+
+        # check draw
+        finished_games = 0
+        for i in range(3):  # go thru the subgames
+            for j in range(3):
+                if self.big_board[i][j] != 0:
+                    finished_games += 1
+                else:
+                    finished_cells = 0
+                    for m in range(3):
+                        for n in range(3):
+                            if self.board[3 * i + m][3 * j + n] != 0:
+                                finished_cells += 1
+
+                    if finished_cells == 9:
+                        finished_games += 1
+
+        if finished_games == 9:
+            self.game_active = False
+            print('draw')
 
 
 if __name__ == "__main__":

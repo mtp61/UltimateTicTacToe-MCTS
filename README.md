@@ -7,8 +7,22 @@ This project was solely intended as a tool for better understanding how to imple
 Bugs:
 - it runs into gamestates where there is no move, must not be checking endgames correctly
 - incorrectly categorizing some subgame wins
+  - I think just with the diagonals
 - sometimes subgames will have no open squares, how to deal with this? - 
   - probably just go anywhere, 
   - raises the issue of ties, 
     - probably just randomly assign winner
   - this needs to be addressed in client and bot
+
+
+done
+client draw
+client subgame finished
+bot draw
+bot subgame finished
+
+todo
+client diagonal
+bot diagonal
+
+still empty randrange...
