@@ -3,7 +3,7 @@ from bot import Bot
 
 
 def main():
-    MAX_TIME = 2  # thinking time for the bot in seconds
+    MAX_TIME = 5  # thinking time for the bot in seconds
 
     # make the game and the bot
     game = Game()
@@ -91,8 +91,8 @@ class Game:
         else:
             col_low = self.COLUMN_LABELS[self.next_subgame[1] * 3]
             col_high = self.COLUMN_LABELS[self.next_subgame[1] * 3 + 2]
-            row_low = self.ROW_LABELS[8 - self.next_subgame[0] * 3]
-            row_high = self.ROW_LABELS[8 - (self.next_subgame[0] * 3 + 2)]
+            row_low = self.ROW_LABELS[8 - (self.next_subgame[0] * 3 + 2)]
+            row_high = self.ROW_LABELS[8 - self.next_subgame[0] * 3]
 
         need_move = True
         while need_move:
@@ -234,24 +234,24 @@ class Game:
         for p in range(3):
             diag_sum += self.big_board[p][p]
 
-            if diag_sum == 3:
-                self.game_active = False
-                print('player win')
-            elif diag_sum == -3:
-                self.game_active = False
-                print('bot win')
+        if diag_sum == 3:
+            self.game_active = False
+            print('player win')
+        elif diag_sum == -3:
+            self.game_active = False
+            print('bot win')
 
         # forwards diag
         diag_sum = 0
         for p in range(3):
             diag_sum += self.big_board[2 - p][p]
 
-            if diag_sum == 3:
-                self.game_active = False
-                print('player win')
-            elif diag_sum == -3:
-                self.game_active = False
-                print('bot win')
+        if diag_sum == 3:
+            self.game_active = False
+            print('player win')
+        elif diag_sum == -3:
+            self.game_active = False
+            print('bot win')
 
         # check draw
         finished_games = 0
