@@ -3,6 +3,7 @@ import random
 import copy
 import math
 
+from shared import *
 
 class Bot():
     def __init__(self, MAX_TIME):
@@ -12,375 +13,188 @@ class Bot():
         # time limit for thinking in seconds
         self.MAX_TIME = MAX_TIME
 
-        self.MY_NUMBER = -1
 
     def get_move(self, board, big_board, next_subgame):
-        """
-        # simple random move bot
-        root.update_children()
-        num_moves = len(root.children)
-        print(f"{num_moves} possible moves")
-        child = root.children[random.randrange(num_moves)]
-        return child.board, child.big_board, child.next_subgame
-        """
-
         # get the current time
         start_time = time.time()
 
         # make the root node
-        root = Node(board, big_board, next_subgame, -1, 0, 'root')  # create the root
+        root = Node(board, big_board, next_subgame, -1, 2, 'root')  # create the root
+        root.generate_children()
 
         # main loop
+        nodes_searched = 0
         while time.time() - self.MAX_TIME < start_time:  # do loop until out of time
+            nodes_searched += 1
+            
             # selection
             current_node = root
             node_chain = [current_node]
-            while current_node.num_visits > 0:  # keep searching until we have a node with no visits
-                max_score = -1
+
+            # for dfs in choosing a node
+            visited = set([root])
+
+            while current_node.num_visits > 0 or current_node == root:  # keep searching until we have a node with no visits
+                # check children
+                non_visited_children = []
                 for child in current_node.children:
-                    if child.num_visits == 0:
-                        child_score = 999999
-                    elif child.is_win != 0:
-                        child_score = -1  # can't select nodes that are wins
-                    else:
-                        parent_visits = current_node.num_visits
+                    if child not in visited:
+                        non_visited_children.append(child)
+
+                if len(non_visited_children) > 0:
+                    # pick a child
+                    max_score = -1
+                    for child in non_visited_children:
+                        if child.num_visits == 0:
+                            # select child
+                            max_child = child
+                            break
 
                         parent_player = current_node.player_to_act
-
-                        num_wins = child.outcomes[parent_player] + 0.5 * child.outcomes[2]
-
+                        num_wins = child.simulation_outcomes[parent_player] + 0.5 * child.simulation_outcomes[-1]
                         win_ratio = num_wins / child.num_visits
-                        
+
+                        parent_visits = current_node.num_visits
                         explore_component = math.sqrt(2) * math.sqrt(math.log(parent_visits) / child.num_visits)
+                        
                         child_score = win_ratio + explore_component
 
-                    if child_score > max_score:
-                        max_score = child_score
-                        max_node = child
+                        if child_score > max_score:
+                            max_score = child_score
+                            max_child = child
 
-                # new current node 
-                current_node = max_node
-                node_chain.append(current_node)
-            
+                    current_node = max_child
+                    node_chain.append(current_node)
+                else:                   
+                    # check if at root
+                    if current_node == root:
+                        # tree is complete
+                        break
+                    
+                    # go up the chain
+                    del node_chain[-1]
+                    current_node = node_chain[-1]
+
+                # add node to visited set
+                if current_node not in visited:
+                    visited.add(current_node)
+
+            # check if tree complete
+            if current_node == root:
+                print("tree complete")
+                break
+
             # expansion
-            if current_node.is_win == 0:
-                current_node.update_children()                    
+            current_node.generate_children()
 
             # simulation
-            simulation_winner = self.simulate_game(current_node)
+            simulation_result = current_node.simulate_game()
 
             # backpropogation
-            for node in node_chain:  # update wins and visits for nodes in the chain
+            for node in node_chain:
                 node.num_visits += 1
-                node.outcomes[simulation_winner] += 1
-        
-        # find best move from the game tree and return it
-        best_child_score = -1
+                node.simulation_outcomes[simulation_result] += 1
+            
+        # find the best move
+        best_child_score = -2
         for child in root.children:
-            if child.num_visits == 0:  # this should not happen if the bot is given sufficient time
+            if child.is_win == 2:  # bot win
+                # pick the move, don't need to do anything else
+                best_child_node = child
+                break
+            elif child.is_win == 1:  # player win
+                child_score = -1
+            elif child.is_win == -1:  # draw
                 child_score = 0
             else:
-                child_score = (child.outcomes[-1] + 0.5 * child.outcomes[2]) / child.num_visits
+                child_score = (child.simulation_outcomes[2] + 0.5 * child.simulation_outcomes[-1]) / child.num_visits
 
             if child_score > best_child_score:
-                best_child_score = child_score
                 best_child_node = child
+                best_child_score = child_score
 
-        # draw the tree -- mostly testing
-        self.draw_tree(root)
-        print(f"selected move {best_child_node.id}")
+        # draw the tree
+        draw_tree(root)
 
-        return best_child_node.board, best_child_node.big_board, best_child_node.next_subgame
+        # output move
+        print(f"bot played { best_child_node.id }, result of searching { nodes_searched } nodes")
 
-
-    def simulate_game(self, start_node):
-        current_node = Node(start_node.board, start_node.big_board, start_node.next_subgame, start_node.player_to_act, start_node.is_win)
-        
-        # go to random moves until there is a win
-        while current_node.is_win == 0:
-            # generate children
-            current_node.update_children()
-
-            # pick a random child and reset current node
-            num_children = len(current_node.children)
-
-
-            if num_children == 0:  # testing, looking for a bug
-                self.render_board(current_node.board, current_node.big_board)
-                print(current_node.is_win)
-
-
-            current_node = current_node.children[random.randrange(num_children)]
-
-            #self.render_board(current_node.board, current_node.big_board)  # testing
-
-        return current_node.is_win  # return winner, 1 or -1
-
-
-    def draw_tree(self, root, max_depth=999, show_no_visit_nodes=False):
-        # draw the tree in dfs
-        node_stack = [(root, 0)]  # format for entries is (node, depth)
-        while len(node_stack) > 0:  # run until stack is empty
-            # get top node
-            (top_node, depth) = node_stack.pop()
-
-            # draw node if less than max_depth
-            if depth < max_depth:
-                if depth == 0:
-                    print(f"{top_node.id}: {top_node.outcomes[-1]} {top_node.outcomes[2]} {top_node.outcomes[1]} / {top_node.num_visits}")
-                else:
-                    if show_no_visit_nodes or top_node.num_visits > 0:
-                        print("    " * (depth - 1) + "----" + f"{top_node.id}: {top_node.outcomes[-1]} {top_node.outcomes[2]} {top_node.outcomes[1]} / {top_node.num_visits}")
-
-            # add children to stack
-            for child in top_node.children:  
-                node_stack.append((child, depth + 1))
-        print()  # add a newline
-
-    
-    def render_board(self, board, big_board):  # for testing only
-        ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
-        COLUMN_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
-        
-        print()
-
-        for i in range(9):
-            print(f"{ROW_LABELS[8 - i]} ", end="")  # row label
-            for j in range(9):
-                # check big board then full board
-                if big_board[math.floor(i / 3)][math.floor(j / 3)] == 1:
-                    print('X', end="")
-                elif big_board[math.floor(i / 3)][math.floor(j / 3)] == -1:
-                    print('O', end="")
-                elif board[i][j] == 0:
-                    print(' ', end="")
-                elif board[i][j] == 1:
-                    print('X', end="")
-                elif board[i][j] == -1:
-                    print('O', end="")
-                
-                if (j + 1) % 3 != 0:
-                    print(' ', end="")
-                elif j != 8:
-                    print('|', end="")
-            print()
-
-            if (i + 1) % 3 == 0 and i != 8:
-                print("  -----┼-----┼-----")
-            
-        print()
-        print("  ", end="")
-        for j in range(9):
-            print(f"{COLUMN_LABELS[j]} ", end="")            
-        print()
+        return best_child_node.move
 
 
 class Node():
-    def __init__(self, board, big_board, next_subgame, player_to_act, is_win, id="node"):
+    def __init__(self, board, big_board, next_subgame, move, player_to_act, id="node"):
         # game state info
         self.board = board
         self.big_board = big_board
         self.next_subgame = next_subgame
+        self.move = move
         self.player_to_act = player_to_act
-        self.is_win = is_win
-
+        self.is_win = check_win(big_board)
+        
         # for MCTS
         self.children = []  # list of child nodes
         self.num_visits = 0
-        self.outcomes = {-1: 0, 1: 0, 2: 0}
+        self.simulation_outcomes = {
+            1: 0, 2: 0, -1: 0
+        }
 
         # needed for drawing tree
         self.id = id
 
 
-    def get_children(self, board, big_board, next_subgame, player_to_act):
-        # needed for naming children
-        ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
-        COLUMN_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    def generate_children(self):
+        # make sure we need to do this
+        if len(self.children) == 0:
+            # needed for naming children
+            ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+            COLUMN_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
 
-        children = []
-
-        if next_subgame == (-1, -1):
-            for i in range(9):
-                for j in range(9):
-                    if board[i][j] == 0:  # open square
-                        temp_child = {}
-                        temp_child['board'] = copy.deepcopy(board)
-                        temp_child['board'][i][j] = player_to_act
-                        temp_child['next_subgame'] = (i % 3, j % 3)
-
-                        temp_child['id'] = COLUMN_LABELS[j] + ROW_LABELS[8 - i]
-
-                        children.append(temp_child)
-        else:
-            for i in range(3):
-                for j in range(3):
-                    if board[next_subgame[0] * 3 + i][next_subgame[1] * 3 + j] == 0:  # open square
-                        temp_child = {}
-                        temp_child['board'] = copy.deepcopy(board)
-                        temp_child['board'][next_subgame[0] * 3 + i][next_subgame[1] * 3 + j] = player_to_act
-                        temp_child['next_subgame'] = (i % 3, j % 3)
-
-                        temp_child['id'] = COLUMN_LABELS[next_subgame[1] * 3 + j] + ROW_LABELS[8 - (next_subgame[0] * 3 + i)]
-
-                        children.append(temp_child)
-
-        # compute bigboard and add player to act and make sure next_subgame is correct
-        row_indices = [i + 3 * next_subgame[0] for i in [0, 1, 2]]
-        col_indices = [i + 3 * next_subgame[1] for i in [0, 1, 2]]
-
-        for child in children:
-            # add the big_board
-            child['big_board'] = copy.deepcopy(big_board)
-
-            # player to act
-            child['player_to_act'] = player_to_act * -1
-
-            # check the subgame to see if it is completed
-            need_update = False
-            i = next_subgame[0]
-            j = next_subgame[1]
-            # check the rows
-            for m in row_indices:
-                row_sum = 0
-                for n in col_indices:
-                    row_sum += child['board'][m][n]
-                
-                if row_sum == 3:
-                    child['big_board'][i][j] = 1
-                    need_update = True
-                elif row_sum == -3:
-                    child['big_board'][i][j] = -1
-                    need_update = True
-                
-            # check the cols
-            for n in row_indices:
-                col_sum = 0
-                for m in col_indices:
-                    col_sum += child['board'][m][n]
-                
-                if col_sum == 3:
-                    child['big_board'][i][j] = 1
-                    need_update = True
-                elif col_sum == -3:
-                    child['big_board'][i][j] = -1
-                    need_update = True
-
-            # check the diagonals
-            # backwards diag
-            diag_sum = 0
-            for p in range(3):
-                diag_sum += child['board'][row_indices[0] + p][col_indices[0] + p]
-    
-            if diag_sum == 3:
-                child['big_board'][i][j] = 1
-                need_update = True
-            elif diag_sum == -3:
-                child['big_board'][i][j] = -1
-                need_update = True
-
-            # forwards diag
-            diag_sum = 0
-            for p in range(3):
-                diag_sum += child['board'][row_indices[0] + p][col_indices[-1] - p]
-
-            if diag_sum == 3:
-                child['big_board'][i][j] = 1
-                need_update = True
-            elif diag_sum == -3:
-                child['big_board'][i][j] = -1
-                need_update = True
-
-            child['is_win'] = 0
-            if need_update:  # update big_board if needed
-                # check if big_board is a win
-                row_indices, col_indices = [0, 1, 2], [0, 1, 2]
-                # check the rows
-                for m in row_indices:
-                    row_sum = 0
-                    for n in col_indices:
-                        row_sum += child['big_board'][m][n]
-                    
-                    if row_sum == 3:
-                        child['is_win'] = 1
-                    elif row_sum == -3:
-                        child['is_win'] = -1
-                    
-                # check the cols
-                for n in row_indices:
-                    col_sum = 0
-                    for m in col_indices:
-                        col_sum += child['big_board'][m][n]
-                    
-                    if col_sum == 3:
-                        child['is_win'] = 1
-                    elif col_sum == -3:
-                        child['is_win'] = -1
-
-                # check the diagonals
-                # backwards diag
-                diag_sum = 0
-                for p in range(3):
-                    diag_sum += child['big_board'][row_indices[0] + p][col_indices[0] + p]
-
-                if diag_sum == 3:
-                    child['is_win'] = 1
-                elif diag_sum == -3:
-                    child['is_win'] = -1
-
-                # forwards diag
-                diag_sum = 0
-                for p in range(3):
-                    diag_sum += child['big_board'][row_indices[0] + p][col_indices[-1] - p]
-
-                if diag_sum == 3:
-                    child['is_win'] = 1
-                elif diag_sum == -3:
-                    child['is_win'] = -1
-            
-            # make sure next_subgame is correct
-            check_draw = False
-            i = child['next_subgame'][0]
-            j = child['next_subgame'][1]
-            if child['big_board'][i][j] != 0:
-                child['next_subgame'] = (-1, -1)
-                check_draw = True
+            # get potential moves
+            potential_moves = []
+            if self.next_subgame == -1:
+                # need to check all squares
+                for i in range(len(self.board)):
+                    if self.board[i] == 0:
+                        potential_moves.append(i)
             else:
-                # check if subgame full
-                finished_cells = 0
-                for m in range(3):
-                    for n in range(3):
-                        if child['board'][3 * i + m][3 * j + n] != 0:
-                            finished_cells += 1
+                # just need to check subgame squares
+                for i in range(9 * self.next_subgame, 9 * self.next_subgame + 9):
+                    if self.board[i] == 0:
+                        potential_moves.append(i)
+
+            # make a child for each of the potential moves
+            for move in potential_moves:
+                new_board = copy.deepcopy(self.board)
+                new_board[move] = self.player_to_act
                 
-                if finished_cells == 9:  # if subgame draw
-                    check_draw = True
-                    child['next_subgame'] = (-1, -1)
+                # todo
+                new_id = COLUMN_LABELS[move % 9] + ROW_LABELS[math.floor(move / 9)]
                 
-            if check_draw:  # check if entire game full
-                finished_games = 0
-                for i in range(3):
-                    for j in range(3):
-                        if child['big_board'][i][j] != 0:
-                            finished_games += 1
-                        else:
-                            finished_cells = 0
-                            for m in range(3):
-                                for n in range(3):
-                                    if child['board'][3 * i + m][3 * j + n] != 0:
-                                        finished_cells += 1
-                            if finished_cells == 9:
-                                finished_games += 1
                 
-                if finished_games == 9:  # if draw
-                    #random_win = random.randrange(2) * 2 - 1  # 1 or -1  # old, set winner to random win
-                    child['is_win'] = 2
+                new_board, new_big_board = update_big_board(new_board, copy.deepcopy(self.big_board), move)
+                if new_big_board[move % 9] == 0:
+                    new_next_subgame = move % 9
+                else:
+                    new_next_subgame = -1
+                if self.player_to_act == 1:
+                    new_player_to_act = 2
+                else:
+                    new_player_to_act = 1
+                self.children.append(Node(new_board, new_big_board, new_next_subgame, move, new_player_to_act, new_id))
 
-        return children
 
+    def simulate_game(self):
+        # need to make a copy of the node
+        current_node = copy.deepcopy(self)
 
-    def update_children(self):
-        children = self.get_children(self.board, self.big_board, self.next_subgame, self.player_to_act)    
+        # main loop
+        while current_node.is_win == 0:
+            # get children
+            current_node.generate_children()
 
-        for child in children:
-            self.children.append(Node(child['board'], child['big_board'], child['next_subgame'], child['player_to_act'], child['is_win'], child['id']))
+            # pick random child
+            num_children = len(current_node.children)
+            current_node = current_node.children[random.randrange(num_children)]
+
+        return current_node.is_win
