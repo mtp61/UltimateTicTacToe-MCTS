@@ -48,7 +48,7 @@ public class Node {
 	
 	public void generateChildren() {
 		// make sure we need to do this
-		if (this.children.size() > 0) {
+		if (this.children.size() == 0) {
 			// get potential moves
 			LinkedList<Integer> potential_moves = new LinkedList<Integer>();
 			if (this.next_subgame == -1) {
@@ -66,7 +66,7 @@ public class Node {
 					}
 				}
 			}
-			
+						
 			// make a child for each of the potential moves
 			for (int i = 0; i < potential_moves.size(); i++) {
 				int[] new_board = new int[81];
@@ -75,7 +75,9 @@ public class Node {
 				}
 				new_board[potential_moves.get(i)] = this.player_to_act;
 				
-				//String new_id = this.COLUMN_LABELS[potential_moves.get(i) % 9] + this.ROW_LABELS[(int) (potential_moves.get(i) / 9)];
+				int col_index = (potential_moves.get(i) % 3 + 3 * ((int) (potential_moves.get(i) / 9) % 3)) % 9;
+				int row_index = ((int) (potential_moves.get(i) / 3) % 3 + 3 * (int) (potential_moves.get(i) / 27)) % 9;
+				String new_id = String.valueOf(Node.COLUMN_LABELS[col_index]) + String.valueOf(Node.ROW_LABELS[row_index]);
 				
 				int[] new_big_board = new int[9];
 				for (int j = 0; j < 9; j++) {
@@ -96,7 +98,7 @@ public class Node {
 				} else {
 					new_player_to_act = 1;
 				}
-				this.children.add(new Node(new_board, new_big_board, new_next_subgame, potential_moves.get(i), new_player_to_act));
+				this.children.add(new Node(new_board, new_big_board, new_next_subgame, potential_moves.get(i), new_player_to_act, new_id));
 			}
 		}
 	}

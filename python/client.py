@@ -4,7 +4,7 @@ from bot import Bot
 from shared import *
 
 def main():
-    MAX_TIME = 5  # thinking time for the bot in seconds
+    MAX_TIME = 1  # thinking time for the bot in seconds
 
     # make the game and the bot
     game = Game()

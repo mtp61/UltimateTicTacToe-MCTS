@@ -98,6 +98,9 @@ class Bot():
         # find the best move
         best_child_score = -2
         for child in root.children:
+            if child.num_visits == 0:
+                break
+
             if child.is_win == 2:  # bot win
                 # pick the move, don't need to do anything else
                 best_child_node = child
@@ -114,11 +117,11 @@ class Bot():
                 best_child_score = child_score
 
         # draw the tree
-        draw_tree(root)
+        draw_tree(root, 0)
 
         # output move
         print(f"bot played { best_child_node.id }, result of searching { nodes_searched } nodes")
-
+        
         return best_child_node.move
 
 
@@ -168,9 +171,9 @@ class Node():
                 new_board = copy.deepcopy(self.board)
                 new_board[move] = self.player_to_act
                 
-                # todo
-                new_id = COLUMN_LABELS[move % 9] + ROW_LABELS[math.floor(move / 9)]
-                
+                col_index = move % 3 + 3 * (math.floor(move / 9) % 3)
+                row_index = math.floor(move / 3) % 3 + 3 * math.floor(move / 27)
+                new_id = COLUMN_LABELS[col_index] + ROW_LABELS[row_index]
                 
                 new_board, new_big_board = update_big_board(new_board, copy.deepcopy(self.big_board), move)
                 if new_big_board[move % 9] == 0:

@@ -13,10 +13,10 @@ public class Game {
 	
 	public Game() {
 		for (int i = 0; i < 81; i++) {
-			board[i] = 0;
+			this.board[i] = 0;
 		}
 		for (int i = 0; i < 9; i++) {
-			big_board[i] = 0;
+			this.big_board[i] = 0;
 		}
 	}
 	
@@ -51,7 +51,7 @@ public class Game {
 			}
 		}
 		System.out.println();
-		System.out.print("  ");
+		System.out.print("   ");
 		
 		for (int j = 0; j < 9; j++) {
 			System.out.print(this.COLUMN_LABELS[j] + " ");
@@ -78,7 +78,7 @@ public class Game {
 		// loop until we have a valid move
 		int move_parsed = 0;
 		while (true) {
-			System.out.print("Enter your move [" + col_low + "-" + col_high + "][" + row_low + "-" + row_high + "]: ");
+			System.out.print("\nEnter your move [" + col_low + "-" + col_high + "][" + row_low + "-" + row_high + "]: ");
 			String move = scanner.nextLine();
 			
 			// check that move follows format

@@ -34,7 +34,7 @@ public class Shared {
 			int num_filled = 0;
 			for (int j = 0; j < 3; j++) {
 				col_sum += board[i + 3 * j];
-				if (board[3 * i + j] != 0 && board[i + 3 * j] != -1) {
+				if (board[i + 3 * j] != 0 && board[i + 3 * j] != -1) {
 	                num_filled++;
 				}
 			}

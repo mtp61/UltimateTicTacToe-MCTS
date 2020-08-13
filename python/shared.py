@@ -71,7 +71,7 @@ def draw_tree(root, max_depth=999, show_no_visit_nodes=False):
 
         if show_no_visit_nodes or top_node.num_visits > 0 or (top_node.is_win != 0 and parent_visits > 0):
             # draw node if less than max_depth, starts with player that made the move then has the id
-            if depth < max_depth:
+            if depth <= max_depth:
                 if depth != 0:
                     print("    " * (depth - 1) + "----", end='')
 

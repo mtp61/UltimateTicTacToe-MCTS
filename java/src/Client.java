@@ -1,6 +1,6 @@
 
 public class Client {
-	public static final int MAX_TIME = 5;
+	public static final int MAX_TIME = 1;
 	
 	public static void main(String args[]) {
 		// make the game and the bot and the shared class
@@ -33,11 +33,14 @@ public class Client {
 			// check for win
 			int win_status = Shared.checkWin(game.getBigBoard());
 			if (win_status == 1) {
-				System.out.println("Player win");
+				System.out.println("\nPlayer win");
+				break;
 			} else if (win_status == 2) {
-				System.out.println("Bot win");
+				System.out.println("\nBot win");
+				break;
 			} else if (win_status == -1) {
-				System.out.println("Draw");
+				System.out.println("\nDraw");
+				break;
 			}
 		}
 	}
